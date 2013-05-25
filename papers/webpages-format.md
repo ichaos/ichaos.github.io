@@ -1,6 +1,6 @@
 ---
-layout: default
-title: About | Purebreeze
+layout: post
+title: Blogging Like a Hacker
 ---
 
 ## A New Post
