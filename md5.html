@@ -1,14 +1,12 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>MD5 Hash Generator - A free tool to create an MD5 hash from a string</title>
 <meta name="description" content="MD5 Hash Generator. Use this fast, free tool to create an MD5 hash from a string." />
 <meta name="keywords" content="MD5, md5, hash, generator, create, string, encode, encrypt, password" />
-<link href="styles2.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-
     <div class="topBox">
         <h1>MD5 Hash Generator</h1>
         <p>Use this generator to create an MD5 hash of a string. </p>
@@ -18,13 +16,189 @@
                 <span>
                     <textarea id="theString" name="theString" cols="60" rows="5"></textarea>
                 </span>
-            </div>
-            <input class="submit" name="submit" type="submit" value="Generate MD5 Hash" />
+            </div>            
+            <button type="button" onclick="myFunction()">Generate MD5 Hash</button>
+<script>
+function log(msg) {
+    setTimeout(function() {
+        throw new Error(msg);
+    }, 0);
+}
+
+/*
+ * convert string into bytes array in big endian (network byte order)
+ * since we get the string from textarea which is
+ * a domstring, so it should be utf-16
+ */
+function stringToBytes(str) {  
+  var ch, st, re = [];  
+  for (var i = 0; i < str.length; i++ ) {  
+    ch = str.charCodeAt(i);  // get char   
+    st = [];              // set up "stack"  
+
+    do {  
+      st.push( ch & 0xFF );  // push byte to stack  
+      ch = ch >> 8;          // shift value down by 1 byte  
+    } while ( ch ); 
+    // add stack contents to result  
+    // done because chars have "wrong" endianness  
+    re = re.concat( st.reverse() );  
+  }  
+  // return an array of bytes  
+  return re;  
+}
+
+function isLittleEndian() {
+    var i = 0x1;
+    return (i << 24) ? true : false;
+}
+
+function leftrotate(x, c) {
+    return (x << c) | (x >>> (32 - c));
+}
+
+function add32(a, b) {
+    return (a + b) & 0xffffffff;
+} 
+
+var hex_chr = '0123456789abcdef'.split('');
+
+    function rhex(n) {
+        var s = '', j = 0;
+        for (; j < 4; j++)
+        s += hex_chr[(n >>> (j * 8 + 4)) & 0x0F] +
+             hex_chr[(n >>> (j * 8)) & 0x0F];
+        return s;
+    }
+
+    function hex(x) {
+        for (var i = 0; i < x.length; i++)
+        x[i] = rhex(x[i]);
+        return x.join('');
+    }
+
+function md5(input) {
+    bytes = stringToBytes(input)    
+    var olen = bytes.length;   
+    log('0x' + olen.toString(16)) 
+    //pad the array
+    bytes.push(0x80);
+    while (bytes.length % 64 != 56) {
+        bytes.push(0x00);
+    }
+    olen = olen << 3; //length of bits
+
+    for (var i = 0; i < 8; i++) {
+        //log((olen >>> i * 8) & 0xff);
+        bytes.push((olen >>> i * 8) & 0xff);
+    }
+    if (olen.toString(16).length <= 8) {
+        bytes[bytes.length - 4] = 0
+        bytes[bytes.length - 3] = 0
+        bytes[bytes.length - 2] = 0
+        bytes[bytes.length - 1] = 0
+    }
+    log(bytes)
+    log(olen.toString(16).length)
+    w = []
+    //Process the message in successive 512-bit chunks
+    //break chunk into sixteen 32-bit little-endian words w[i], 0 ≤ i ≤ 15
+    for (var i = 0; i < bytes.length; i += 4) {
+        var n = bytes[i] | (bytes[i + 1] << 8) | (bytes[i + 2] << 16) | (bytes[i + 3] << 24);
+        w.push(n)
+    }
+    //r specifies the per-round shift amounts
+    var r = [7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22, 
+            5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
+            4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,
+            6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21]
+    //Use binary integer part of the sines of integers (Radians) as constants:
+    var k = [0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
+        0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
+        0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+        0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
+        0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
+        0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+        0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
+        0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
+        0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+        0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+        0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
+        0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+        0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
+        0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+        0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+        0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391]
+
+
+    //Initialize variables:
+    var h0 = 0x67452301
+    var h1 = 0xEFCDAB89
+    var h2 = 0x98BADCFE
+    var h3 = 0x10325476
+    var f,g,tmp;
+
+    log("w.length = " + w.length)
+    // calculate md5
+    for (var i = 0; i < w.length / 16; i += 16) {
+        var a = h0
+        var b = h1
+        var c = h2
+        var d = h3
+
+        for (var j = 0; j < 64; j++) {
+            if (j >= 0 && j <= 15) {
+                f = (b & c) | (~b & d);
+                g = j;
+            } else if (j >= 16 && j <= 31) {
+                f = (d & b) | (~d & c);
+                g = add32(5 * j, 1) % 16
+            } else if (j >= 32 && j <= 47) {
+                f = b ^ c ^ d;
+                g = add32(3 * j, 5) % 16
+            } else {
+                f = c ^ (b | ~d);
+                g = (7 * j) % 16
+            }
+            tmp = d
+            d = c
+            c = b
+            b = add32(leftrotate(add32(add32(a, f), add32(k[j], w[g])), r[j]), b)
+            a = tmp
+        }
+        //log(h0.toString(16))
+        h0 = add32(a, h0)
+        //log(h0)
+        h1 = add32(b, h1)
+        h2 = add32(c, h2)
+        h3 = add32(d, h3)
+    }
+    //(Output is in little-endian)
+    return Array(h0, h1, h2, h3)
+}
+
+/*
+ * DomString is A UTF-16 String.
+ */
+
+/*
+ * For test:
+ * MD5("The quick brown fox jumps over the lazy dog") = 9e107d9d372bb6826bd81d3542a419d6
+ * MD5("") = d41d8cd98f00b204e9800998ecf8427e
+ */
+
+function myFunction() {
+    //generate md5 hash from user input
+    var input = document.getElementById("theString"); 
+    log(input.value)
+    var md5hash = md5(input.value)
+    log('md5 of ' + input.value + ' is: ' + md5hash.join(''))   
+    document.getElementById("result").innerHTML = hex(md5hash);
+}
+</script>
         </form></div>
     </div>
 
-
-
-<div class="resultBox"><h2>Your MD5 hash:</h2><p>e69c54c3087adce26b54415767117860</p></div><p>This MD5 hash generator is useful for encoding passwords, credit cards numbers and other sensitive date into MySQL, Postgress or other databases. PHP programmers, ASP programmers and anyone developing on MySQL, SQL, Postgress or similar should find this online tool an especially handy resource.</p> 
+<div class="resultBox"><h2>Your MD5 hash:</h2><p id="result"></p></div><p>This MD5 hash generator is useful for encoding passwords, credit cards numbers and other sensitive date into MySQL, Postgress or other databases. PHP programmers, ASP programmers and anyone developing on MySQL, SQL, Postgress or similar should find this online tool an especially handy resource.</p> 
 </body>
 </html>
